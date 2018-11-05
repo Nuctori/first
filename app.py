@@ -1,106 +1,17 @@
 import random
 from Player import Player
 from Bullet import Bullet
+from gamemap import Map
 
-#角色位置 1-3 6-3
-#玩家对象 四方向移动 卡组 行动值 当前坐标
-#弹幕对象 发射坐标 当前坐标 角度 速度 威力
-#每次回合结算，初始化地图 重新渲染所有坐标
-#现在先分拆函数  玩家类 子弹类   符卡类 地图类
-player1 = 100 #定义玩家的号码
+
+player1 = 100 
 player2 = 101
     
-'''
-星弹:10  
-小玉:11  快速 少量伤害
-中玉:12  中速 中等伤害
-大玉:13  慢速 大量伤害
-菱弹:14 
-激光:15
-'''
-
-class Map(): 
-    #地图需要两份 一份显示玩家1弹幕 一份显示玩家2的弹幕
-    def __init__(self,player,bullet_list=None):
-        self.gamemap1 = [([0]*5)for i in range(8)]
-        self.gamemap2 = [([0]*5)for i in range(8)]
-        self.bullets = bullet_list
 
 
-    def getMap(self):
-        self.gamemap1[player[1].y][player[1].x] = player[1].num
-        self.gamemap1[player[2].y][player[2].x] = player[2].num
-
-        self.gamemap2[player[1].y][player[1].x] = player[1].num
-        self.gamemap2[player[2].y][player[2].x] = player[2].num
-        if self.bullets is not None: 
-            for Bullet in self.bullets:
-                if Bullet.y > 7 or  Bullet.x > 4:#再嵌套下去的话，圈复杂度爆炸！！！
-                    continue
-                if Bullet.player == player1:
-                    if self.gamemap1[Bullet.y][Bullet.x] == 0:
-                        self.gamemap1[Bullet.y][Bullet.x] = Bullet.num
-                    else:
-                        self.gamemap1[Bullet.y][Bullet.x] = 55
-                elif Bullet.player == player2:
-                    if self.gamemap2[Bullet.y][Bullet.x] == 0:
-                        self.gamemap2[Bullet.y][Bullet.x] = Bullet.num
-                    else:
-                        self.gamemap2[Bullet.y][Bullet.x] = 55
-
-        return self.gamemap1,self.gamemap2
-
-
-def rendermap(gamemap_tuple):
-    #传入二维列表地图，生成文本型地图
-    def mainrender(line,i):
-        ourprint =""
-        ourprint += "\n｜"
-        for item in line:
-            if item == 0:
-                ourprint += "　｜"
-            if item == 100:
-                if i == 2:
-                    ourprint += "△ ｜"#玩家1
-                else:
-                    ourprint += "▽ ｜"#玩家1
-            if item == 101:
-                if i == 2:
-                    ourprint += "▼ ｜" #玩家2
-                else:
-                    ourprint += "▲ ｜"#玩家1
-
-
-            if item == 10:
-                ourprint += "☆ ｜" #星弹
-            if item == 55:
-                ourprint += "※ ｜" #弹幕重叠
-        return ourprint
-
-    i = 0
-    str_map = []
-    ourprint = ""
-    
-    for gamemap in gamemap_tuple:
-        i += 1 
-        ourprint = "玩家{}弹幕图".format(i)
-        ourprint += "\n______________________"
-
-        if i == 1:
-            for line in reversed(gamemap):
-                ourprint += mainrender(line,i)
-            ourprint += "\n￣￣￣￣￣￣￣￣￣￣￣"
-            str_map.append(ourprint)
-        else:    
-            for line in gamemap:
-                ourprint += mainrender(line,i)
-            ourprint += "\n￣￣￣￣￣￣￣￣￣￣￣"
-            str_map.append(ourprint)
-    return str_map
 
     
 def bullet_move(bullet_list,player): 
-
     #输入弹幕列表，让弹幕列表中子弹移动一步，输出弹幕列表中弹幕进行一次移动后的结果
     for bullet in bullet_list:
         for i in range(bullet.speed):
@@ -108,101 +19,196 @@ def bullet_move(bullet_list,player):
             if bul == None:
                 bullet_list.remove(bullet)  
 
-            elif  bul[0] == player[2].x and bul[1] == player[2].y: #弹幕碰撞到玩家1检测
+            elif  bul[0] == player[1].x and bul[1] == player[1].y: #弹幕碰撞到玩家1检测
                 if bullet.player == player1:
-                    print("biu！玩家2疮了！")
-            elif  bul[0] == player[1].x and bul[1] == player[1].y: #弹幕碰撞到玩家2检测
+                    return("biu！玩家2疮了！")
+                    
+            elif  bul[0] == player[0].x and bul[1] == player[0].y: #弹幕碰撞到玩家2检测
                 if bullet.player == player2:
-                    print("biu！玩家1疮了！")
+                    return("biu！玩家1疮了！")
+                    
 
 
-def time_end(cmds,player):
-    i = 0  #一股C味
-     #结束双方回合，进行回合运算，输入命令和玩家字典，给玩家对象和命令对象迭代
-    for cmd in cmds:
-        i += 1
-        move = {"W":player[i].up, "A":player[i].right, "S":player[i].down,"D":player[i].left}
-        for cmditem in cmd:
+def time_end(players,game):
+    i = 0  
+    #一股C味
+    #结束双方回合，进行回合运算，输入命令和玩家字典，给玩家对象和命令对象迭代
+    for player in players:
+        move = {"W":player.up, "A":player.right, "S":player.down,"D":player.left}
+        for cmditem in player.cmd:
             if cmditem.isdigit():
-                bullet_list.extend(player[i].handcard.useCard(cmditem)) 
+                game.bullet_list.extend(player.handcard.useCard(cmditem)) 
             elif isinstance(cmditem,str):
                 move[cmditem]()
+        i += 1
 
-    bullet_move(bullet_list,player) 
-    strmap = rendermap(Map(player,bullet_list).getMap())
-    return(strmap)
+    result = bullet_move(game.bullet_list,players)
+    if result is not None:
+        return(result)
+    game.strmap = Map(players,game.bullet_list).getrendermap()
+    return(game.strmap)
 
- 
+class Game():
+    #封装关于游戏的主要数据（弹幕 玩家 地图 回合数）
+    def __init__(self,player):
+        self.bullet_list = []
+        self.player = player
+        self.strmap = Map(player,self.bullet_list).getrendermap()
+        self.gameround = 0
 
-'''
-'回合开始，执行抽卡函数，手牌，上限为8的数组，将卡片放入数组，根据输入序号，取出卡片 
-'任务列表，一个队列，输入指令后 扣除行动点，指令进队 
-'回合结算，取出队列指令，一条一条执行
-'计算耗费，弹幕初始耗费，加速度耗费
-'''
-
-
-if __name__ == "__main__":
-    bullet_list = []
-    player={
-        1:Player(player1),
-        2:Player(player2)
-    }
-    strmap = rendermap(Map(player,bullet_list).getMap())
-    print("已完成地图初始化")
-
-    
-    i = 0
-    gameround = 0
-
-    tips= '''指令 W,A,S,D 控制角色移动，指令B释放弹幕'''
-    print(tips)
-    while True:
-        cmds = [[],[]]
-        allow_input = {
-        " ","W","A","S","D","E",
-        "1","2","3","4","5","6","7","8","9"}
-        #玩家1操作时 显示玩家2发射的弹幕
-        for i in range(1,3):
-            actpoint = 5
-            havemove = False
-
-            if i == 2:
-                print(strmap[1])
-            else:
-                print(strmap[0])
-
-            while True:
-                cmd = input("玩家{}请输入你的命令:".format(i))
-                if cmd in allow_input:
-                    if cmd == " ":
-                        if actpoint < 1:
-                            print("行动点不足")
-                        else:
-                            actpoint -= 1
-                            player[i].handcard.getCard()
-                            player[i].handcard.showCard()
-                    elif "WASD".find(cmd) != -1:
-                        if actpoint < 1:
-                            print("行动点不足")
-                        elif havemove:
-                            print("本回合你已经移动过了")
-                        else:
-                            actpoint -= 1
-                            havemove = True
-                            cmds[i-1].append(cmd.upper())
-                    elif "123456789".find(cmd) != -1:
-                        cost = player[i].handcard.cost(cmd)
-                        if actpoint >= cost:
-                            actpoint -= player[i].handcard.cost(cmd)
-                            cmds[i-1].append(cmd)
-                        else:
-                            print('行动点不足')
-                    else:
-                        break
+    def getmap(self,Player):
+        #输入玩家对象，取出字符串地图
+        i = 0
+        for player in self.player:
+            if Player == player:
+                if i == 1:
+                    return(self.strmap[0],self.strmap[1]) 
                 else:
-                    print('输入指令无效，请重新输入')
+                    return(self.strmap[1],self.strmap[0]) 
+            i += 1
+
+    #完善player类 封装，不使用公共数组
+    def sendorder(self,Player,cmd):
+        # 给 player对象 过滤并且 发送指令，输入玩家对象，指令，返回提示文本
+        allow_input = {
+        " ","W","A","S","D","E","C",
+        "1","2","3","4","5","6","7","8","9"}
+        if cmd in allow_input:
+            if cmd == " ":
+                if Player.actpoint < 1:
+                    return("行动点不足")
+                else:
+                    Player.actpoint -= 1 
+                    Player.handcard.getCard()
+                    return(Player.handcard.showCard())
+            elif cmd == "C":
+                return(Player.handcard.showCard())
+            elif "WASD".find(cmd) != -1:
+                move = {'W':'上','A':'左','S':'下','D':'右'}
+                if Player.actpoint < 1:
+                    return("行动点不足,剩余行动点{}".format(Player.actpoint))
+                elif Player.havemove:
+                    return("本回合你已经移动过了")
+                else:
+                    Player.actpoint -= 1
+                    Player.havemove = True
+                    Player.cmd.append(cmd)
+                    return("你向{}移动了一步".format(move[cmd]))
+            elif "123456789".find(cmd) != -1:
+
+                cost = Player.handcard.cost(cmd)
+                if cost == 0:
+                    return('没有选定手牌')
+                elif cmd in Player.cmd:
+                    return('您已使用这张手牌')
+                elif Player.actpoint >= cost:
+                    Player.actpoint -= Player.handcard.cost(cmd)
+                    Player.cmd.append(cmd)
+                    return('已使用手牌')
+                else:
+                    return('行动点不足')
+            else:
+                pass
+        else:
+            return('输入指令无效，请重新输入')
         
-        strmap = time_end(cmds,player=player)
-        gameround += 1
-        print("第{}回合".format(gameround))
+
+def handle_sock(sock,addr,Player,Game):
+    #监听玩家客户端发送过来的指令，进行操作 输入：套接字，端口，玩家对象，游戏对象。循环进行游戏
+    import time
+    while True:
+        cmd = sock.recv(1024)
+        cmd = cmd.decode('utf-8')
+        cmd = cmd.upper()
+        wait = False
+        if cmd != 'E':
+            
+            msg = Game.sendorder(Player,cmd)
+            msg += '\r\n当前你还拥有{}点行动点\r\n'.format(Player.actpoint)
+            msg += '<input>'
+            sock.send(msg.encode('utf-8'))
+
+        else:    
+            msg = '请等待...'
+            sock.send(msg.encode('utf-8'))
+            allgame[Game] += 1
+            while allgame[Game] != 2:
+                wait = True
+                time.sleep(1)
+            if wait:
+                allgame[Game] = 0
+
+            else:
+                Game.gameround += 1
+                result = time_end(players=players,game=Game)
+                if isinstance(result,str):
+                    msg = result
+                    sock.send(msg.encode('utf-8'))
+                    sock.close()
+                    break
+
+                
+            Player.roundinit()
+            strmap = Game.getmap(Player)
+            msg = strmap[0]+'\r\n\r\n'
+            msg += strmap[1]
+            msg += '\r\n当前你还拥有{}点行动点\r\n'.format(Player.actpoint)
+            msg += '<input>'
+            sock.send(msg.encode('utf-8'))
+
+'''
+抽卡器
+只抽出类 不抽出实例，使用时候再创建实例
+'''
+
+allgame = {}
+if __name__ == "__main__":
+
+    import socket
+    import sys
+    import threading
+
+    serversocket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+    host = '127.0.0.1'
+    port = 4148
+    serversocket.bind((host,port))
+    serversocket.listen(20)
+    players = []
+    room = {}
+    clientsocket_list = []
+    newgame = None
+
+
+    while True:
+        clientsocket,addr = serversocket.accept()
+        print(str(addr))
+
+
+
+        if clientsocket not in clientsocket_list:
+            clientsocket_list.append(clientsocket)
+
+        if not players:
+            players.append(Player(player1,addr))
+            msg = '已进入游戏，请等待另一位玩家。\r\n'
+            clientsocket.send(msg.encode('utf-8'))
+        elif not newgame:
+            players.append(Player(player2,addr))
+            newgame = Game(players)
+            i=0
+
+            for client in clientsocket_list:
+                allgame[newgame] = 0
+                client_thread = threading.Thread(target=handle_sock,args=(client,addr,players[i],newgame))
+                client_thread.start()
+
+                msg = '玩家已经到齐，游戏开始\r\n'
+                strmap = newgame.getmap(players[i])
+                msg += strmap[0]+'\r\n\r\n'
+                msg += strmap[1]
+                msg += '\r\n当前你还拥有{}点行动点\r\n'.format(players[i].actpoint)
+                msg += '<input>'
+                client.send(msg.encode('utf-8'))
+                i += 1
+                msg= ""  
+

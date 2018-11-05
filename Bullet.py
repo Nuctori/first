@@ -4,7 +4,7 @@ player1 = 100 #定义玩家的号码
 player2 = 101
 # 弹幕继承子弹类  参数 发射玩家 发射方向 发射角度
 class Bullet(): #弹幕需要记录发射者   
-    def __init__(self,Player,direction,angle):
+    def __init__(self,Player,direction,angle,speed=1):
         self.player = Player.num
 
         self.x = Player.x
@@ -15,9 +15,15 @@ class Bullet(): #弹幕需要记录发射者
         self.direction = direction
 
         # self.power = 1 #弹幕的伤害
-        self.speed = 1 #弹幕速度BB
+        self.speed = speed #弹幕速度BB
         self.num = 10
         self.round = 0
+
+    def active(self,Player):
+        self.x = Player.x
+        self.y = Player.y 
+        self.ox = Player.x
+        self.oy = Player.y 
 
     def __next__(self): 
         #我来演示一下什么叫做垃圾代码

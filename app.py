@@ -50,17 +50,17 @@ def time_end(players,game):
 
 class Game():
     #封装关于游戏的主要数据（弹幕 玩家 地图 回合数）
-    def __init__(self,player,clientsocket_list):
+    def __init__(self,players,clientsocket_list):
         self.bullet_list = []
-        self.player = player
-        self.strmap = Map(player,self.bullet_list).getrendermap()
+        self.players = players
+        self.strmap = Map(players,self.bullet_list).getrendermap()
         self.gameround = 0
         self.socket = clientsocket_list
 
     def getmap(self,Player):
         #输入玩家对象，取出字符串地图
         i = 0
-        for player in self.player:
+        for player in self.players:
             if Player == player:
                 if i == 1:
                     return(self.strmap[0],self.strmap[1]) 
@@ -141,7 +141,7 @@ def handle_sock(sock,addr,Player,Game):
 
             else:
                 Game.gameround += 1
-                result = time_end(players=players,game=Game)
+                result = time_end(players=Game.players,game=Game)
                 if isinstance(result,str):
                     msg = result
                     for socket in Game.socket:
@@ -196,13 +196,12 @@ if __name__ == "__main__":
         elif not newgame:
             players.append(Player(player2,addr))
             newgame = Game(players,clientsocket_list)
-            i=0
+            i = 0
 
             for client in clientsocket_list:
                 allgame[newgame] = 0
                 client_thread = threading.Thread(target=handle_sock,args=(client,addr,players[i],newgame))
                 client_thread.start()
-
                 msg = '玩家已经到齐，游戏开始\r\n'
                 strmap = newgame.getmap(players[i])
                 msg += strmap[0]+'\r\n\r\n'
@@ -212,4 +211,7 @@ if __name__ == "__main__":
                 client.send(msg.encode('utf-8'))
                 i += 1
                 msg= ""  
+            players = []
+            newgame = None
+            clientsocket_list = []
 

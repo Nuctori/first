@@ -1,7 +1,7 @@
 player1 = 100 #定义玩家的号码
 player2 = 101
 
-bullet_style = {10:'☆',11:'☯',12:'◯',13:'○',14:'♦',55:'※'}
+bullet_style = {10:'☆',11:'☯',12:'○',13:'•',14:'♦',55:'※'}
 class Map(): 
     #地图需要两份 一份显示玩家1弹幕 一份显示玩家2的弹幕
     def __init__(self,players,bullet_list=None):
@@ -42,7 +42,7 @@ class Map():
             ourprint += "\n｜"
             for item in line:
                 if item == 0:
-                    ourprint += "｜"
+                    ourprint += "  ｜"
                 elif item == 100:
                     if i == 2:
                         ourprint += "△｜"#玩家1

@@ -50,11 +50,12 @@ def time_end(players,game):
 
 class Game():
     #封装关于游戏的主要数据（弹幕 玩家 地图 回合数）
-    def __init__(self,player):
+    def __init__(self,player,clientsocket_list):
         self.bullet_list = []
         self.player = player
         self.strmap = Map(player,self.bullet_list).getrendermap()
         self.gameround = 0
+        self.socket = clientsocket_list
 
     def getmap(self,Player):
         #输入玩家对象，取出字符串地图
@@ -143,15 +144,15 @@ def handle_sock(sock,addr,Player,Game):
                 result = time_end(players=players,game=Game)
                 if isinstance(result,str):
                     msg = result
-                    sock.send(msg.encode('utf-8'))
-                    sock.close()
+                    for socket in Game.socket:
+                        socket.send(msg.encode('utf-8'))
                     break
 
                 
             Player.roundinit()
             strmap = Game.getmap(Player)
-            msg = strmap[0]+'\r\n\r\n'
-            msg += strmap[1]
+            msg = strmap[1]+'\r\n\r\n'
+            msg += strmap[0]
             msg += '\r\n当前你还拥有{}点行动点\r\n'.format(Player.actpoint)
             msg += '<input>'
             sock.send(msg.encode('utf-8'))
@@ -194,7 +195,7 @@ if __name__ == "__main__":
             clientsocket.send(msg.encode('utf-8'))
         elif not newgame:
             players.append(Player(player2,addr))
-            newgame = Game(players)
+            newgame = Game(players,clientsocket_list)
             i=0
 
             for client in clientsocket_list:

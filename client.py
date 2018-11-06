@@ -10,7 +10,10 @@ while True:
     msg = msg.decode('utf-8')
     print(msg)
     if msg.find('<input>') > -1:
+        
         send = input("请输入\r\n")
+        if send == "":
+            send = "没有输入指令"
         s.send(send.encode('utf-8'))
 
 s.close()

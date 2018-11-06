@@ -74,7 +74,7 @@ class Game():
         allow_input = {
         " ","W","A","S","D","E","C",
         "1","2","3","4","5","6","7","8","9"}
-        if cmd in allow_input:
+        if cmd in allow_input and cmd != "":
             if cmd == " ":
                 if Player.actpoint < 1:
                     return("行动点不足")
@@ -132,13 +132,13 @@ def handle_sock(sock,addr,Player,Game):
         else:    
             msg = '请等待...'
             sock.send(msg.encode('utf-8'))
-            allgame[Game] += 1
-            while allgame[Game] != 2:
+            allgame[Game]['allready'] += 1
+            while allgame[Game]['allready'] != 2: #等待如何获知游戏结束
                 wait = True
+                print(allgame[Game]['allready'])
                 time.sleep(1)
             if wait:
-                allgame[Game] = 0
-
+                allgame[Game]['allready'] = 0  
             else:
                 Game.gameround += 1
                 result = time_end(players=Game.players,game=Game)
@@ -146,9 +146,14 @@ def handle_sock(sock,addr,Player,Game):
                     msg = result
                     for socket in Game.socket:
                         socket.send(msg.encode('utf-8'))
-                    break
+                    allgame[Game]['gameover'] = True 
+                    break 
 
-                
+            if allgame[Game]['gameover']: #等待的玩家从这跳出
+                del allgame[Game]
+                print('已退出')
+                break
+
             Player.roundinit()
             strmap = Game.getmap(Player)
             msg = strmap[1]+'\r\n\r\n'
@@ -199,7 +204,7 @@ if __name__ == "__main__":
             i = 0
 
             for client in clientsocket_list:
-                allgame[newgame] = 0
+                allgame[newgame] = {'allready':0,'gameover':False}
                 client_thread = threading.Thread(target=handle_sock,args=(client,addr,players[i],newgame))
                 client_thread.start()
                 msg = '玩家已经到齐，游戏开始\r\n'

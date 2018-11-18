@@ -164,7 +164,10 @@ def handle_sock(sock,addr,Player,Game):
         else:    
             msg = '请等待...'
             sock.send(msg.encode('utf-8'))
+
+            threadLock.acquire()
             allgame[Game]['allready'] += 1
+            threadLock.release()
             #等待
             while allgame[Game]['allready'] != 0:
                 time.sleep(0.1)
@@ -187,6 +190,7 @@ def handle_sock(sock,addr,Player,Game):
             msg += '<input>'
             sock.send(msg.encode('utf-8'))
 
+threadLock = threading.Lock()
 allgame = {}
 if __name__ == "__main__":
 
@@ -214,7 +218,7 @@ if __name__ == "__main__":
         if not players:
             players.append(Player(player1,addr))
             msg = '已进入游戏，请等待另一位玩家。\r\n'
-            clientsocket.send(msg.encode('utf-8'))
+            clientsocket.send(mgitsg.encode('utf-8'))
         elif not newgame:
             players.append(Player(player2,addr))
             newgame = Game(players,clientsocket_list)

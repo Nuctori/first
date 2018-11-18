@@ -2,13 +2,16 @@ import random
 from Player import Player
 from Bullet import Bullet
 from gamemap import Map
-
+import threading
+import time
 
 player1 = 100 
 player2 = 101
     
-
-
+'''
+todo
+超时结束，退出游戏
+'''
 
     
 def bullet_move(bullet_list,player): 
@@ -17,7 +20,11 @@ def bullet_move(bullet_list,player):
         for i in range(bullet.speed):
             bul = bullet.__next__() #？？
             if bul == None:
-                bullet_list.remove(bullet)  
+                try:
+                    bullet_list.remove(bullet)
+                except ValueError as e:
+                    pass
+                  
 
             elif  bul[0] == player[1].x and bul[1] == player[1].y: #弹幕碰撞到玩家1检测
                 if bullet.player == player1:
@@ -56,6 +63,9 @@ class Game():
         self.strmap = Map(players,self.bullet_list).getrendermap()
         self.gameround = 0
         self.socket = clientsocket_list
+        loop = threading.Thread(target=self.gameLoop)
+        loop.start()
+
 
     def getmap(self,Player):
         #输入玩家对象，取出字符串地图
@@ -112,16 +122,38 @@ class Game():
                 pass
         else:
             return('输入指令无效，请重新输入')
+    
+    def gameLoop(self):
+        while True:
+            time.sleep(1)
+
+            if allgame[self]['allready'] == 2:
+                self.gameround += 1
+                result = time_end(players=self.players,game=self)
+                allgame[self]['allready'] = 0
+
+                if isinstance(result,str):
+                    msg = result
+                    for socket in self.socket:
+                        socket.send(msg.encode('utf-8'))
+                    allgame[self]['gameover'] = True 
+                    break 
+
+
+
         
+
 
 def handle_sock(sock,addr,Player,Game):
     #监听玩家客户端发送过来的指令，进行操作 输入：套接字，端口，玩家对象，游戏对象。循环进行游戏
-    import time
     while True:
-        cmd = sock.recv(1024)
+        try:
+            cmd = sock.recv(1024)
+        except ConnectionResetError:
+            break
+
         cmd = cmd.decode('utf-8')
         cmd = cmd.upper()
-        wait = False
         if cmd != 'E':
             
             msg = Game.sendorder(Player,cmd)
@@ -133,27 +165,20 @@ def handle_sock(sock,addr,Player,Game):
             msg = '请等待...'
             sock.send(msg.encode('utf-8'))
             allgame[Game]['allready'] += 1
-            while allgame[Game]['allready'] != 2: #等待如何获知游戏结束
-                wait = True
-                print(allgame[Game]['allready'])
-                time.sleep(1)
-            if wait:
-                allgame[Game]['allready'] = 0  
-            else:
-                Game.gameround += 1
-                result = time_end(players=Game.players,game=Game)
-                if isinstance(result,str):
-                    msg = result
-                    for socket in Game.socket:
-                        socket.send(msg.encode('utf-8'))
-                    allgame[Game]['gameover'] = True 
-                    break 
+            #等待
+            while allgame[Game]['allready'] != 0:
+                time.sleep(0.1)
 
-            if allgame[Game]['gameover']: #等待的玩家从这跳出
-                del allgame[Game]
-                print('已退出')
+
+            if allgame[Game]['gameover']:
+                if allgame[Game]['gameover'] == 'player1_exit': 
+                    del allgame[Game]
+                    print('已退出')
+                else:
+                    allgame[Game]['gameover'] = 'player1_exit'
                 break
 
+            #处理
             Player.roundinit()
             strmap = Game.getmap(Player)
             msg = strmap[1]+'\r\n\r\n'
@@ -162,20 +187,15 @@ def handle_sock(sock,addr,Player,Game):
             msg += '<input>'
             sock.send(msg.encode('utf-8'))
 
-'''
-抽卡器
-只抽出类 不抽出实例，使用时候再创建实例
-'''
-
 allgame = {}
 if __name__ == "__main__":
 
     import socket
     import sys
-    import threading
+    
 
     serversocket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-    host = '127.0.0.1'
+    host = '0.0.0.0'
     port = 4148
     serversocket.bind((host,port))
     serversocket.listen(20)
@@ -188,9 +208,6 @@ if __name__ == "__main__":
     while True:
         clientsocket,addr = serversocket.accept()
         print(str(addr))
-
-
-
         if clientsocket not in clientsocket_list:
             clientsocket_list.append(clientsocket)
 
@@ -207,7 +224,12 @@ if __name__ == "__main__":
                 allgame[newgame] = {'allready':0,'gameover':False}
                 client_thread = threading.Thread(target=handle_sock,args=(client,addr,players[i],newgame))
                 client_thread.start()
-                msg = '玩家已经到齐，游戏开始\r\n'
+                msg = '''
+                玩家已经到齐，游戏开始\r\n
+                操作说明：输入空格抽卡，输入WASD进行移动，\r\n
+                输入数字1-9使用弹幕卡，输入C查看手牌\r\n
+                谁先被弹幕击中了就输了
+                '''
                 strmap = newgame.getmap(players[i])
                 msg += strmap[0]+'\r\n\r\n'
                 msg += strmap[1]
